@@ -5,7 +5,7 @@ ZooKeepr has the irritating quality of printin it's logs to sterr
 
 Sometimes (mostly) this is not really a desirable thing
 """
-from zoop._zookeeper import zookeeper
+import zookeeper
 
 def divert_zoolog(logfile='/dev/null'):
     """
