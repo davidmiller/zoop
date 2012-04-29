@@ -1,7 +1,16 @@
 """
 zoop.client
 """
-import zookeeper
+import os
+
+try:
+    import zookeeper
+except ImportError:
+    if os.environ.has_key('TRAVIS') and os.environ['TRAVIS'] == True:
+        import mock
+        zookeeper = mock.MagicMock(name='zookeeper')
+    else:
+        raise
 
 
 class ZooKeeper(object):
