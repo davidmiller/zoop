@@ -6,7 +6,7 @@ import os
 try:
     import zookeeper
 except ImportError:
-    if os.environ.has_key('TRAVIS') and os.environ['TRAVIS'] == True:
+    if os.environ.has_key('TRAVIS') and os.environ['TRAVIS'] == 'true':
         import mock
         zookeeper = mock.MagicMock(name='zookeeper')
     else:
