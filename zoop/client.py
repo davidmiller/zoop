@@ -1,7 +1,7 @@
 """
 zoop.client
 """
-from zoop._zookeeper import zookeeper
+import zookeeper
 
 OPEN_ACL_UNSAFE = dict(perms=zookeeper.PERM_ALL, scheme = 'world', id='anyone')
 
