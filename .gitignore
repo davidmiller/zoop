@@ -1,0 +1,7 @@
+*.pyc
+dist/
+MANIFEST
+doc/build
+build/
+
+*flymake*
