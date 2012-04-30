@@ -1,9 +1,70 @@
 """
 zoop.client
 """
+import collections
+
 import zookeeper
 
+from zoop.enums import Event
+
 OPEN_ACL_UNSAFE = dict(perms=zookeeper.PERM_ALL, scheme = 'world', id='anyone')
+
+class Watcher(object):
+    """
+    Stores a register of callbacks for particular watchers.
+    """
+    def __init__(self, zkh):
+        """
+        Store vars
+
+        Arguments:
+        - `zkh`: zookeeper instance handle
+
+        Return: None
+        Exceptions: None
+        """
+        self._zk = zkh
+        self.callbacks = collections.defaultdict(lambda: collections.defaultdict(list))
+
+    def dispatch(self, zk, etype, conn, path):
+        """
+        Callback for libzookeeper that fires when ZooKeeper events occur.
+
+        Dispatch to our own callbacks.
+
+        Arguments:
+        - `zk`: handle to the ZooKeeper connection
+        - `etype`: Enum- Event type
+        - `conn`: Enum Connection Status
+        - `path`: string- Path that the event occured
+
+        Return: None
+        Exceptions: None
+        """
+        print "Got watch event", path, etype
+        if self.callbacks[path][etype]:
+            self.callbacks[path][etype](path, etype)
+        return
+
+    def spyon(self, path, event, callback):
+        """
+        Begin watching `path` for events of type `event`.
+        When one happens, execute `callback`, with two
+        arguments, the path of the ZooKeeper Event and the Event type.
+
+        Arguments:
+        - `path`: string - Path to watch
+        - `event`: int - a zoop.Event attribute
+        - `callback`: callable
+
+        Return: None
+        Exceptions: None
+        """
+        print "Start spying on", path
+        self.callbacks[path][event].append(callback)
+        #zookeeper.get(self._zk, path, self.dispatch)
+        #zookeeper.get_children(self._zk, path, self.dispatch)
+        return
 
 
 class ZooKeeper(object):
@@ -23,6 +84,7 @@ class ZooKeeper(object):
         """
         self.server = connection
         self._zk = None
+        self.watcher = Watcher(self._zk)
         return
 
     def connect(self):
@@ -32,7 +94,9 @@ class ZooKeeper(object):
         Return: None
         Exceptions: None
         """
-        self._zk = zookeeper.init(self.server, self._eventhandler)
+        #        self._zk = zookeeper.init(self.server, self.watcher.dispatch)
+        self._zk = zookeeper.init(self.server, None)
+        self.watcher._zk = self._zk
 
     def close(self):
         """
@@ -43,23 +107,6 @@ class ZooKeeper(object):
         """
         if self._zk:
             zookeeper.close(self._zk)
-
-    def _eventhandler(self, zk, etype, conn, path):
-        """
-        Callback for libzookeeper that fires when ZooKeeper events occur.
-
-        Dispatch to our own callbacks.
-
-        Arguments:
-        - `zk`: handle to the ZooKeeper connection
-        - `etype`: Enum- Event type
-        - `conn`: Enum Connection Status
-        - `path`: string- Path that the event occured
-
-        Return: None
-        Exceptions: None
-        """
-        pass
 
     def create(self, path, value='', acl=[OPEN_ACL_UNSAFE], flags=0):
         """
@@ -86,7 +133,8 @@ class ZooKeeper(object):
         Return: Tuple of (Value, Statsdict)
         Exceptions: NoNodeError
         """
-        return zookeeper.get(self._zk, path, None)
+        return zookeeper.get(self._zk, path, self.watcher.dispatch)
+    #return zookeeper.get(self._zk, path, self.watcher.dispatch)
 
     def get_children(self, path):
         """
@@ -98,7 +146,8 @@ class ZooKeeper(object):
         Return: list of strings
         Exceptions: NoNodeError
         """
-        return zookeeper.get_children(self._zk, path, None)
+        #    return zookeeper.get_children(self._zk, path, self.watcher.dispatch)
+        return zookeeper.get_children(self._zk, path, self.watcher.dispatch)
 
     def exists(self, path):
         """
@@ -110,4 +159,36 @@ class ZooKeeper(object):
         Return: dict of stats or None
         Exceptions: None
         """
-        return zookeeper.exists(self._zk, path, None)
+        #        return zookeeper.exists(self._zk, path, self.watcher.dispatch)
+        return zookeeper.exists(self._zk, path, self.watcher.dispatch)
+
+    def set(self, path, value):
+        """
+        Set the value of the ZooKeeper Node at `path`
+
+        Arguments:
+        - `path`: string
+        - `value`: string
+
+        Return: Tuple of (Value, Statsdict)
+        Exceptions: NoNodeError
+        """
+        return zookeeper.set(self._zk, path, value)
+
+    def watch(self, path, event, callback):
+        """
+        Begin watching `path` for events of type `event`.
+        When one happens, execute `callback`, with two
+        arguments, the path of the ZooKeeper Even and the event type
+
+        Arguments:
+        - `path`: string - Path to watch
+        - `event`: int - a zoop.Event attribute
+        - `callback`: callable
+
+        Return: None
+        Exceptions: None
+        """
+        self.watcher.spyon(path, event, callback)
+        return
+

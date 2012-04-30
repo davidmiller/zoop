@@ -6,9 +6,21 @@ import unittest
 if sys.version_info < (2, 7):
     import unittest2 as unittest
 
-from mock import patch
+from mock import patch, Mock
 
+import zoop
 from zoop import client
+
+class WatcherTestCase(unittest.TestCase):
+    def setUp(self):
+        self.w = client.Watcher(None)
+
+    def test_spyon(self):
+        """ Register our desire to watch for events """
+        cb = lambda *a,**k: True
+        # self.w.spyon('/foo/bar', zoop.Event.Child, cb)
+        # self.assertEqual([cb], self.w.callbacks['/foo/bar'][zoop.Event.Child])
+        # !!! Make this a real test please!
 
 class ClientTestCase(unittest.TestCase):
     def setUp(self):
@@ -24,7 +36,7 @@ class ClientTestCase(unittest.TestCase):
         with patch.object(client.zookeeper, 'init') as Pinit:
             self.assertEqual(None, self.zk._zk)
             self.zk.connect()
-            Pinit.assert_called_once_with('localhost:2181', self.zk._eventhandler)
+            Pinit.assert_called_once_with('localhost:2181', None)
             self.assertEqual(Pinit.return_value, self.zk._zk)
 
     def test_create(self):
@@ -39,21 +51,30 @@ class ClientTestCase(unittest.TestCase):
         with patch.object(client, 'zookeeper') as Pzk:
             resp = self.zk.get('/foo/bar')
             self.assertEqual(Pzk.get.return_value, resp)
-            Pzk.get.assert_called_once_with(self.zk._zk, '/foo/bar', None)
+            Pzk.get.assert_called_once_with(self.zk._zk, '/foo/bar', self.zk.watcher.dispatch)
 
     def test_get_children(self):
         """ Should Make a get_children request to libzookeeper """
         with patch.object(client, 'zookeeper') as Pzk:
             resp = self.zk.get_children('/foo/bar')
             self.assertEqual(Pzk.get_children.return_value, resp)
-            Pzk.get_children.assert_called_once_with(self.zk._zk, '/foo/bar', None)
+            Pzk.get_children.assert_called_once_with(self.zk._zk, '/foo/bar', self.zk.watcher.dispatch)
 
     def test_exists(self):
         """ Should Make an exists request to libzookeeper """
         with patch.object(client, 'zookeeper') as Pzk:
             resp = self.zk.exists('/foo/bar')
             self.assertEqual(Pzk.exists.return_value, resp)
-            Pzk.exists.assert_called_once_with(self.zk._zk, '/foo/bar', None)
+            Pzk.exists.assert_called_once_with(self.zk._zk, '/foo/bar', self.zk.watcher.dispatch)
+
+    def test_watch(self):
+        """ Register our desire to watch for events """
+        cb = lambda *a,**k: True
+        with patch.object(self.zk.watcher, 'spyon') as Pspy:
+            self.zk.watch('/foo/bar', zoop.Event.Child, cb)
+            Pspy.assert_called_once_with('/foo/bar', zoop.Event.Child, cb)
+
+
 
 
 if __name__ == '__main__':
