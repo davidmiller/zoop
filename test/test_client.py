@@ -51,21 +51,28 @@ class ClientTestCase(unittest.TestCase):
         with patch.object(client, 'zookeeper') as Pzk:
             resp = self.zk.get('/foo/bar')
             self.assertEqual(Pzk.get.return_value, resp)
-            Pzk.get.assert_called_once_with(self.zk._zk, '/foo/bar', self.zk.watcher.dispatch)
+            Pzk.get.assert_called_once_with(self.zk._zk, '/foo/bar', None)
 
     def test_get_children(self):
         """ Should Make a get_children request to libzookeeper """
         with patch.object(client, 'zookeeper') as Pzk:
             resp = self.zk.get_children('/foo/bar')
             self.assertEqual(Pzk.get_children.return_value, resp)
-            Pzk.get_children.assert_called_once_with(self.zk._zk, '/foo/bar', self.zk.watcher.dispatch)
+            Pzk.get_children.assert_called_once_with(self.zk._zk, '/foo/bar', None)
 
     def test_exists(self):
         """ Should Make an exists request to libzookeeper """
         with patch.object(client, 'zookeeper') as Pzk:
             resp = self.zk.exists('/foo/bar')
             self.assertEqual(Pzk.exists.return_value, resp)
-            Pzk.exists.assert_called_once_with(self.zk._zk, '/foo/bar', self.zk.watcher.dispatch)
+            Pzk.exists.assert_called_once_with(self.zk._zk, '/foo/bar', None)
+
+    def test_ls(self):
+        """ Replicate ls """
+        with patch.object(client, 'zookeeper') as Pzk:
+            resp = self.zk.ls('/goo/car')
+            Pzk.get_children.assert_called_once_with(self.zk._zk, '/goo/car', None)
+            self.assertEqual(Pzk.get_children.return_value, resp)
 
     def test_watch(self):
         """ Register our desire to watch for events """

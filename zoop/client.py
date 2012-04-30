@@ -94,7 +94,6 @@ class ZooKeeper(object):
         Return: None
         Exceptions: None
         """
-        #        self._zk = zookeeper.init(self.server, self.watcher.dispatch)
         self._zk = zookeeper.init(self.server, None)
         self.watcher._zk = self._zk
 
@@ -133,8 +132,7 @@ class ZooKeeper(object):
         Return: Tuple of (Value, Statsdict)
         Exceptions: NoNodeError
         """
-        return zookeeper.get(self._zk, path, self.watcher.dispatch)
-    #return zookeeper.get(self._zk, path, self.watcher.dispatch)
+        return zookeeper.get(self._zk, path, None)
 
     def get_children(self, path):
         """
@@ -146,8 +144,20 @@ class ZooKeeper(object):
         Return: list of strings
         Exceptions: NoNodeError
         """
-        #    return zookeeper.get_children(self._zk, path, self.watcher.dispatch)
-        return zookeeper.get_children(self._zk, path, self.watcher.dispatch)
+        return zookeeper.get_children(self._zk, path, None)
+
+    def ls(self, path):
+        """
+        Return a list of strings representing the child nodes of `path`
+
+        (Note, this is an alias of get_children)
+        Arguments:
+        - `path`: string
+
+        Return: list of strings
+        Exceptions: NoNodeError
+        """
+        return self.get_children(path)
 
     def exists(self, path):
         """
@@ -159,8 +169,7 @@ class ZooKeeper(object):
         Return: dict of stats or None
         Exceptions: None
         """
-        #        return zookeeper.exists(self._zk, path, self.watcher.dispatch)
-        return zookeeper.exists(self._zk, path, self.watcher.dispatch)
+        return zookeeper.exists(self._zk, path, None)
 
     def set(self, path, value):
         """
