@@ -7,9 +7,10 @@ if sys.version_info < (2, 7):
     import unittest2 as unittest
 
 from mock import patch
+import zookeeper
 
 import zoop
-from zoop import client
+from zoop import client, exceptions
 
 class ClientTestCase(unittest.TestCase):
     def setUp(self):
@@ -23,10 +24,11 @@ class ClientTestCase(unittest.TestCase):
     def test_connect(self):
         """ Connect to the Zookeeper instance """
         with patch.object(client.zookeeper, 'init') as Pinit:
-            self.assertEqual(None, self.zk._zk)
-            self.zk.connect()
-            Pinit.assert_called_once_with('localhost:2181', None)
-            self.assertEqual(Pinit.return_value, self.zk._zk)
+            with patch.object(self.zk, 'watcher'):
+                self.assertEqual(None, self.zk._zk)
+                self.zk.connect()
+                Pinit.assert_called_once_with('localhost:2181', None)
+                self.assertEqual(Pinit.return_value, self.zk._zk)
 
     def test_create(self):
         """ Create a node """
@@ -34,6 +36,16 @@ class ClientTestCase(unittest.TestCase):
             resp = self.zk.create('/foo/bar', 'YAY')
             self.assertEqual(Pzk.create.return_value, resp)
             Pzk.create.assert_called_once_with(self.zk._zk, '/foo/bar', 'YAY', [client.OPEN_ACL_UNSAFE], 0)
+
+    def test_create_exists(self):
+        """ Raise if it exists """
+        def raiser(*a, **k):
+            raise(zookeeper.NodeExistsException("!"))
+
+        with patch.object(client.zookeeper, 'create') as Pcreate:
+            Pcreate.side_effect = raiser
+            with self.assertRaises(exceptions.NodeExistsError):
+                self.zk.create('/exists')
 
     def test_get(self):
         """ Should Make a get request to libzookeeper """

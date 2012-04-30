@@ -3,9 +3,10 @@ zoop.client
 """
 import zookeeper
 
-from zoop import watch
+from zoop import exceptions, watch
 
 OPEN_ACL_UNSAFE = dict(perms=zookeeper.PERM_ALL, scheme = 'world', id='anyone')
+
 
 
 class ZooKeeper(object):
@@ -37,6 +38,7 @@ class ZooKeeper(object):
         """
         self._zk = zookeeper.init(self.server, None)
         self.watcher.set_zhandle(self._zk)
+        self.watcher.set_global()
 
     def close(self):
         """
@@ -61,7 +63,23 @@ class ZooKeeper(object):
         Return: None
         Exceptions: NodeExistsError
         """
-        return zookeeper.create(self._zk, path, value, acl, flags)
+        try:
+            return zookeeper.create(self._zk, path, value, acl, flags)
+        except zookeeper.NodeExistsException:
+            errstr = "Can't create {0} as it already exists".format(path)
+            raise exceptions.NodeExistsError(errstr)
+
+    def delete(self, path):
+        """
+        Delete the ZooKeeper Node at `path`
+
+        Arguments:
+        - `path`: string
+
+        Return: None
+        Exceptions: None
+        """
+        zookeeper.delete(self._zk, path)
 
     def get(self, path):
         """
@@ -125,7 +143,7 @@ class ZooKeeper(object):
         """
         return zookeeper.set(self._zk, path, value)
 
-    def watch(self, path, event, callback):
+    def watch(self, path, callback, event):
         """
         Begin watching `path` for events of type `event`.
         When one happens, execute `callback`, with two
@@ -133,11 +151,11 @@ class ZooKeeper(object):
 
         Arguments:
         - `path`: string - Path to watch
-        - `event`: int - a zoop.Event attribute
         - `callback`: callable
+        - `event`: int - a zoop.Event attribute
 
         Return: None
         Exceptions: None
         """
-        self.watcher.spyon(path, event, callback)
+        self.watcher.spyon(path, callback, event)
         return

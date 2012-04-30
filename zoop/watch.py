@@ -4,8 +4,13 @@ zoop.watcher
 Callbacks for state change go here!
 """
 import collections
+import threading
+
+PLock = threading.RLock()
 
 import zookeeper
+
+from zoop import enums, exceptions
 
 class Watcher(object):
     """
@@ -16,16 +21,17 @@ class Watcher(object):
     >>> def cb(event, path):
     ...     print 'Got Called!", path, event
     ...
-    >>> watcher.spyon('/zookeeper', Event.Child, cb)
+    >>> watcher.spyon('/zookeeper', cb, Event.Child)
     >>> client = Client('localhost:2181')
     >>> client.create('/zookeeper/yay', 'Hello Beautiful World')
     ... Got Called! /zookeeper/yay 4
     """
 
-    __register_watches = [
-        zookeeper.get,
-        zookeeper.get_children
-        ]
+    _watch_funcs = {
+        enums.Event.Deleted: zookeeper.get,
+        enums.Event.Changed: zookeeper.get,
+        enums.Event.Child: zookeeper.get_children
+        }
 
     def __init__(self, zkh):
         """
@@ -59,11 +65,22 @@ class Watcher(object):
         self._zk = handle
         return
 
+    def set_global(self):
+        """
+        Set our dispatch function as the ZooKeeper global watcher.
+
+        Return: None
+        Exceptions: None
+        """
+        zookeeper.set_watcher(self._zk, self.dispatch)
+        return
+
     def dispatch(self, zk, etype, conn, path):
         """
         Callback for libzookeeper that fires when ZooKeeper events occur.
 
         Dispatch to our own callbacks.
+        Then re-watch the node/event type
 
         Arguments:
         - `zk`: handle to the ZooKeeper connection
@@ -74,12 +91,22 @@ class Watcher(object):
         Return: None
         Exceptions: None
         """
-        print "Got watch event", path, etype
-        if self.callbacks[path][etype]:
-            self.callbacks[path][etype](path, etype)
+        if etype == enums.Event.Session:
+            return
+
+        if self.callbacks[path][etype] > 0:
+            for cb in self.callbacks[path][etype]:
+                cb(path, etype)
+
+        def watchit(h, t, s, p):
+            self.dispatch(h, t, s, p)
+
+        if etype in self._watch_funcs:
+            self._watch_funcs[etype](self._zk, path, self.dispatch)
+
         return
 
-    def spyon(self, path, event, callback):
+    def spyon(self, path, callback, *events):
         """
         Begin watching `path` for events of type `event`.
         When one happens, execute `callback`, with two
@@ -87,14 +114,23 @@ class Watcher(object):
 
         Arguments:
         - `path`: string - Path to watch
-        - `event`: int - a zoop.Event attribute
         - `callback`: callable
+        - `*events`: int - one or more zoop.Event attribute. Must pass
+                           at least one
 
         Return: None
-        Exceptions: None
+        Exceptions:
+        - NoEventError: No events passed.
         """
-        print "Start spying on", path
-        #self.callbacks[path][event].append(callback)
-        #zookeeper.get(self._zk, path, self.dispatch)
-        #zookeeper.get_children(self._zk, path, self.dispatch)
+        if not events: # Valid syntax, but invalid semantics
+            errmsg = "You must pass at least one Event to spy on"
+            raise exceptions.NoEventError(errmsg)
+        for e in events:
+            self.callbacks[path][e].append(callback)
+
+            def cb(h, t, s, p):
+                self.dispatch(h, t, s, p)
+                return
+
+            print self._watch_funcs[e](self._zk, path, cb)
         return
