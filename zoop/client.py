@@ -1,70 +1,11 @@
 """
 zoop.client
 """
-import collections
-
 import zookeeper
 
-from zoop.enums import Event
+from zoop import watch
 
 OPEN_ACL_UNSAFE = dict(perms=zookeeper.PERM_ALL, scheme = 'world', id='anyone')
-
-class Watcher(object):
-    """
-    Stores a register of callbacks for particular watchers.
-    """
-    def __init__(self, zkh):
-        """
-        Store vars
-
-        Arguments:
-        - `zkh`: zookeeper instance handle
-
-        Return: None
-        Exceptions: None
-        """
-        self._zk = zkh
-        self.callbacks = collections.defaultdict(lambda: collections.defaultdict(list))
-
-    def dispatch(self, zk, etype, conn, path):
-        """
-        Callback for libzookeeper that fires when ZooKeeper events occur.
-
-        Dispatch to our own callbacks.
-
-        Arguments:
-        - `zk`: handle to the ZooKeeper connection
-        - `etype`: Enum- Event type
-        - `conn`: Enum Connection Status
-        - `path`: string- Path that the event occured
-
-        Return: None
-        Exceptions: None
-        """
-        print "Got watch event", path, etype
-        if self.callbacks[path][etype]:
-            self.callbacks[path][etype](path, etype)
-        return
-
-    def spyon(self, path, event, callback):
-        """
-        Begin watching `path` for events of type `event`.
-        When one happens, execute `callback`, with two
-        arguments, the path of the ZooKeeper Event and the Event type.
-
-        Arguments:
-        - `path`: string - Path to watch
-        - `event`: int - a zoop.Event attribute
-        - `callback`: callable
-
-        Return: None
-        Exceptions: None
-        """
-        print "Start spying on", path
-        self.callbacks[path][event].append(callback)
-        #zookeeper.get(self._zk, path, self.dispatch)
-        #zookeeper.get_children(self._zk, path, self.dispatch)
-        return
 
 
 class ZooKeeper(object):
@@ -84,7 +25,7 @@ class ZooKeeper(object):
         """
         self.server = connection
         self._zk = None
-        self.watcher = Watcher(self._zk)
+        self.watcher = watch.Watcher(self._zk)
         return
 
     def connect(self):
@@ -95,7 +36,7 @@ class ZooKeeper(object):
         Exceptions: None
         """
         self._zk = zookeeper.init(self.server, None)
-        self.watcher._zk = self._zk
+        self.watcher.set_zhandle(self._zk)
 
     def close(self):
         """
@@ -200,4 +141,3 @@ class ZooKeeper(object):
         """
         self.watcher.spyon(path, event, callback)
         return
-

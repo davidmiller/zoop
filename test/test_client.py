@@ -6,21 +6,10 @@ import unittest
 if sys.version_info < (2, 7):
     import unittest2 as unittest
 
-from mock import patch, Mock
+from mock import patch
 
 import zoop
 from zoop import client
-
-class WatcherTestCase(unittest.TestCase):
-    def setUp(self):
-        self.w = client.Watcher(None)
-
-    def test_spyon(self):
-        """ Register our desire to watch for events """
-        cb = lambda *a,**k: True
-        # self.w.spyon('/foo/bar', zoop.Event.Child, cb)
-        # self.assertEqual([cb], self.w.callbacks['/foo/bar'][zoop.Event.Child])
-        # !!! Make this a real test please!
 
 class ClientTestCase(unittest.TestCase):
     def setUp(self):

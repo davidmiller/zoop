@@ -26,3 +26,19 @@ def divert_zoolog(logfile='/dev/null'):
     zookeeper.set_log_stream(fh)
     return
 
+def set_loglevel(level):
+    """
+    Set the ZooKeeper log level.
+
+    Valid arguments are DEBUG|ERROR|INFO|WARN
+
+
+    Arguments:
+    - `level`: string
+
+    Return: None
+    Exceptions: None
+    """
+    zlevel = getattr(zookeeper, 'LOG_LEVEL_{0}'.format(level))
+    zookeeper.set_debug_level(zlevel)
+    return
