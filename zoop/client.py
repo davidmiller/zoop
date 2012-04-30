@@ -159,3 +159,12 @@ class ZooKeeper(object):
         """
         self.watcher.spyon(path, callback, event)
         return
+
+class AsyncZooKeeper(object):
+    """
+    A ZooKeeper client that uses the Asynchronous
+    libzookeeper API.
+
+    Methods can be expected to take an additional
+    callback parameter.
+    """
