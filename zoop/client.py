@@ -29,6 +29,9 @@ class ZooKeeper(object):
         self.watcher = watch.Watcher(self._zk)
         return
 
+    def __repr__(self):
+        return "<ZooKeeper Client for {0}>".format(self.server)
+
     def connect(self):
         """
         Create a connection to the ZooKeeper instance
@@ -103,6 +106,7 @@ class ZooKeeper(object):
         Return: list of strings
         Exceptions: NoNodeError
         """
+        # !!! Wrap the ZooKeeper exceptions
         return zookeeper.get_children(self._zk, path, None)
 
     def ls(self, path):
