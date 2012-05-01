@@ -1,6 +1,8 @@
 """
 zoop.client
 """
+import threading
+
 import zookeeper
 
 from zoop import exceptions, watch
@@ -24,6 +26,8 @@ class ZooKeeper(object):
         Arguments:
         - `connection`: string host:port
         """
+        self.connected = False
+        self.cv = threading.Condition()
         self.server = connection
         self._zk = None
         self.watcher = watch.Watcher(self._zk)
@@ -39,7 +43,18 @@ class ZooKeeper(object):
         Return: None
         Exceptions: None
         """
-        self._zk = zookeeper.init(self.server, None)
+        def connwatch(handle, etype, state, path):
+            with self.cv:
+                self.connected = True
+                self.cv.notify()
+            return
+
+        with self.cv:
+            self._zk = zookeeper.init(self.server, connwatch)
+            self.cv.wait(10.0)
+            if not self.connected:
+                raise Exception("!")
+
         self.watcher.set_zhandle(self._zk)
         self.watcher.set_global()
 
