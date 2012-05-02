@@ -25,7 +25,7 @@ class ClientTestCase(unittest.TestCase):
 
     def test_connect(self):
         """ Connect to the Zookeeper instance """
-        self.zk.connwait = 1
+        self.zk.connwait = 0.1
 
         with patch.object(client.zookeeper, 'init') as Pinit:
 

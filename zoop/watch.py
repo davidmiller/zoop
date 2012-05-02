@@ -90,9 +90,13 @@ class Watcher(object):
 
         Return: None
         Exceptions: None
+
         """
         if etype == enums.Event.Session:
             return
+
+        if etype in self._watch_funcs:
+            self._watch_funcs[etype](self._zk, path, self.dispatch)
 
         if self.callbacks[path][etype] > 0:
             for cb in self.callbacks[path][etype]:
@@ -100,9 +104,6 @@ class Watcher(object):
 
         def watchit(h, t, s, p):
             self.dispatch(h, t, s, p)
-
-        if etype in self._watch_funcs:
-            self._watch_funcs[etype](self._zk, path, self.dispatch)
 
         return
 
