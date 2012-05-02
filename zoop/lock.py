@@ -53,6 +53,7 @@ class BaseLock(object):
         self.tlocal = threading.local()
         self.tlocal.revoked = []
         self.tlocal.locking = None
+        self.tlocal.acquired = False
         if not self.zk.exists(root):
             self.zk.create(root)
         if not self.zk.exists(self.path):
@@ -89,55 +90,53 @@ class BaseLock(object):
         Arguments:
         - `timeout`: int
 
-        Return: None
+        Return: bool - whether we acquired the Lock or not
         Exceptions: None
         """
         # This implementation is based upon the Mozilla Services
         # ztools lock at https://github.com/mozilla-services/zktools
+        # with some additional encapsulation and error handling added.
         self.tlocal.revoked = []
 
         nodepath, keyname = self._create_waitnode()
-
-        acquired = False
         cv = threading.Event()
 
         def lockwatch(handle, etype, state, path):
             cv.set()
 
         tstart = time.time()
-
-        while not acquired:
+        frist = True
+        while not self.tlocal.acquired:
             cv.clear()
 
-            if timeout is not None and time.time() - tstart > timeout:
+            if not frist and timeout is not None and time.time() - tstart > timeout:
                 try:
                     self.zk.delete(nodepath)
                 except exceptions.NoNodeError:
                     pass
                 return False
+            frist = False
 
             kids = self.zk.get_children(self.path)
-            # This sort isn't used here, but in has_lock()
-            kids.sort(key=lambda val: val[val.rfind('-') + 1:])
 
             if len(kids) == 0 or not keyname in kids:
                 # Only really for connection issues
                 nodepath, keyname = self._create_waitnode()
                 continue
 
-            acquired, blocking = self.has_lock(keyname, kids)
-            if acquired:
+            self.acquired, blocking = self.has_lock(keyname, kids)
+            if self.acquired:
                 break
 
             last_blocker = join(self.path, blocking[-1])
             if not self.zk.exists(last_blocker, lockwatch):
-                continue # Wait - what?
+                continue # Already free
 
             if timeout is not None:
                 cv.wait(timeout - (time.time() - tstart))
 
         self.tlocal.lock_node = nodepath
-        return
+        return True
 
     def _create_waitnode(self):
         """
@@ -196,6 +195,8 @@ class BaseLock(object):
                 or None.
         Exceptions: None
         """
+        locknodes.sort(key=lambda val: val[val.rfind('-') + 1:])
+
         if keypath == locknodes[0]:
             return True, None
         return False, locknodes[:locknodes.index(keypath)]
@@ -208,12 +209,13 @@ class BaseLock(object):
         Exceptions: None
         """
         self.tlocal.revoked = []
+        self.acquired = False
         try:
             self.zk.delete(self.tlocal.lock_node)
             del self.tlocal.lock_node
         except (zookeeper.NoNodeException, AttributeError):
             pass # We never had the Lock!
-        return
+        return True
 
 class Lock(BaseLock):
     """

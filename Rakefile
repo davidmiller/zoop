@@ -1,5 +1,5 @@
 
-PROJ = "rpc"
+PROJ = "zoop"
 
 task :test, :python do |t, args|
   p "Running unit tests for #{PROJ}"
