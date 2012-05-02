@@ -17,6 +17,21 @@ class QueueTestCase(unittest.TestCase):
         self.zk = Mock(name='Mock ZooKeeper')
         self.q = queue.Queue(self.zk, '/foo/q')
 
+    def test_init_exists(self):
+        "Don't create, it exists"
+        zk = Mock(name='Mock ZooKeeper')
+        zk.exists.return_value = True
+        queue.Queue(zk, '/bar/q')
+        zk.exists.assert_called_once_with('/bar/q')
+
+    def test_init_doesnt_exist(self):
+        "Don't create, it exists"
+        zk = Mock(name='Mock ZooKeeper')
+        zk.exists.return_value = False
+        queue.Queue(zk, '/bar/q')
+        zk.exists.assert_called_once_with('/bar/q')
+        zk.create.assert_called_once_with('/bar/q')
+
     def test_empty(self):
         """ The queue is empty """
         self.zk.get_children.return_value = []

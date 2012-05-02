@@ -1,3 +1,20 @@
+# Copyright (c) 2012 David Miller (david@deadpansincerity.com)
+#
+# This file is part of zoop (http://github.com/davidmiller/zoop)
+#
+# zoop is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
 """
 zoop.queue
 
@@ -5,6 +22,7 @@ Distributed Queue implementation running on Zookeeper.
 
 As much as is possible this implementation seeks to mirror the API
 established by the Standard Library's queue module.
+
 """
 import os
 
@@ -37,6 +55,8 @@ class Queue(object):
         self.zk = client
         self.path = path
         self.prefix = 'q-'
+        if not self.zk.exists(path):
+            self.zk.create(path)
 
     def __repr__(self):
         return "<ZooKeeper FIFO Queue at {0}{1}>".format(self.zk.server, self.path)
@@ -154,3 +174,15 @@ class Queue(object):
             return callback(data)
 
         self.zk.watch(self.path, watcher, enums.Event.Child)
+
+"""
+!!! PriorityQueue
+
+To implement a priority queue, you need only make two simple changes
+to the generic queue recipe . First, to add to a queue, the pathname
+ends with "queue-YY" where YY is the priority of the element with lower
+numbers representing higher priority (just like UNIX). Second, when
+removing from the queue, a client uses an up-to-date children list
+meaning that the client will invalidate previously obtained children
+lists if a watch notification triggers for the queue node.
+"""
