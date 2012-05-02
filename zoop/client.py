@@ -26,6 +26,7 @@ class ZooKeeper(object):
         Arguments:
         - `connection`: string host:port
         """
+        self.connwait = 10.0
         self.connected = False
         self.cv = threading.Condition()
         self.server = connection
@@ -51,7 +52,7 @@ class ZooKeeper(object):
 
         with self.cv:
             self._zk = zookeeper.init(self.server, connwatch)
-            self.cv.wait(10.0)
+            self.cv.wait(self.connwait)
             if not self.connected:
                 raise Exception("!")
 

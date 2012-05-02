@@ -10,7 +10,9 @@ from mock import patch
 import zookeeper
 
 import zoop
-from zoop import client, exceptions
+from zoop import client, exceptions, logutils
+
+logutils.set_loglevel('ERROR')
 
 class ClientTestCase(unittest.TestCase):
     def setUp(self):
@@ -23,12 +25,21 @@ class ClientTestCase(unittest.TestCase):
 
     def test_connect(self):
         """ Connect to the Zookeeper instance """
+        self.zk.connwait = 1
+
         with patch.object(client.zookeeper, 'init') as Pinit:
+
+            def connected(server, handler, *args):
+                handler(1, -1, 1, None)
+                return 1
+
+            Pinit.side_effect = connected
             with patch.object(self.zk, 'watcher'):
                 self.assertEqual(None, self.zk._zk)
                 self.zk.connect()
-                Pinit.assert_called_once_with('localhost:2181', None)
-                self.assertEqual(Pinit.return_value, self.zk._zk)
+                Pinit.assert_called_once()
+                self.assertEqual(1, self.zk._zk)
+                self.assertEqual(True, self.zk.connected)
 
     def test_create(self):
         """ Create a node """
