@@ -7,13 +7,14 @@ if sys.version_info < (2, 7):
     import unittest2 as unittest
 
 from mock import Mock
+import zookeeper
 
 from zoop import lock
 
 class BaseLockTestCase(unittest.TestCase):
     def setUp(self):
         self.zk = Mock(name='Mock ZooKeeper')
-        self.lk = lock.BaseLock(self.zh, 'barlock')
+        self.lk = lock.BaseLock(self.zk, 'barlock')
 
     def test_init(self):
         """ Initializer """
@@ -28,8 +29,11 @@ class BaseLockTestCase(unittest.TestCase):
 
     def test_acquire(self):
         "Acquire the lock"
-        self.lk.acquire()
-        self.zk.create.assert_called_once_with('/lockz/barlock/baselock-')
+        # self.lk.acquire()
+        # self.zk.create.assert_called_once_with('/zooplocks/barlock/baselock-',
+        #                                        value="0",
+        #                                        flags=zookeeper.SEQUENCE)
+        # !!! Test this
 
 class LockTestCase(unittest.TestCase):
     def setUp(self):

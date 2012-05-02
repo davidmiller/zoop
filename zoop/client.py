@@ -113,21 +113,26 @@ class ZooKeeper(object):
         - `path`: string
 
         Return: None
-        Exceptions: None
+        Exceptions: NoNodeError
         """
-        zookeeper.delete(self._zk, path)
+        try:
+            zookeeper.delete(self._zk, path)
+        except zookeeper.NoNodeException:
+            errmsg = "The Node {0} does not exist".format(path)
+            raise exceptions.NoNodeError(errmsg)
 
-    def get(self, path):
+    def get(self, path, watch=None):
         """
         Get the value of the ZooKeeper Node at `path`
 
         Arguments:
         - `path`: string
+        - `watch`: callable - optional watcher function
 
         Return: Tuple of (Value, Statsdict)
         Exceptions: NoNodeError
         """
-        return zookeeper.get(self._zk, path, None)
+        return zookeeper.get(self._zk, path, watch)
 
     def get_children(self, path):
         """
@@ -155,7 +160,7 @@ class ZooKeeper(object):
         """
         return self.get_children(path)
 
-    def exists(self, path):
+    def exists(self, path, watch=None):
         """
         Determine whether the ZooKeeper Node at `path` exists
 
@@ -165,7 +170,7 @@ class ZooKeeper(object):
         Return: dict of stats or None
         Exceptions: None
         """
-        return zookeeper.exists(self._zk, path, None)
+        return zookeeper.exists(self._zk, path, watch)
 
     def set(self, path, value):
         """

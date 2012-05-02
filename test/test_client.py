@@ -6,7 +6,7 @@ import unittest
 if sys.version_info < (2, 7):
     import unittest2 as unittest
 
-from mock import patch
+from mock import patch, Mock
 import zookeeper
 
 import zoop
@@ -46,7 +46,8 @@ class ClientTestCase(unittest.TestCase):
         with patch.object(client, 'zookeeper') as Pzk:
             resp = self.zk.create('/foo/bar', 'YAY')
             self.assertEqual(Pzk.create.return_value, resp)
-            Pzk.create.assert_called_once_with(self.zk._zk, '/foo/bar', 'YAY', [client.OPEN_ACL_UNSAFE], 0)
+            Pzk.create.assert_called_once_with(self.zk._zk, '/foo/bar', 'YAY',
+                                               [client.OPEN_ACL_UNSAFE], 0)
 
     def test_create_exists(self):
         """ Raise if it exists """
@@ -58,12 +59,39 @@ class ClientTestCase(unittest.TestCase):
             with self.assertRaises(exceptions.NodeExistsError):
                 self.zk.create('/exists')
 
+    def test_delete(self):
+        """ Delete a node """
+        with patch.object(client, 'zookeeper') as Pzk:
+            self.zk.delete('/foo/bar')
+            Pzk.delete.assert_called_once_with(self.zk._zk, '/foo/bar')
+
+    def test_delete_no_node(self):
+        """ Delete a node """
+        def raiser(*a,**kw):
+            raise(zookeeper.NoNodeException("!"))
+
+        with patch.object(client.zookeeper, 'delete') as Pdel:
+            Pdel.side_effect = raiser
+
+            with self.assertRaises(exceptions.NoNodeError):
+                self.zk.delete('/foo/bar')
+                Pdel.assert_called_once_with(self.zk._zk, '/foo/bar')
+
     def test_get(self):
         """ Should Make a get request to libzookeeper """
         with patch.object(client, 'zookeeper') as Pzk:
             resp = self.zk.get('/foo/bar')
             self.assertEqual(Pzk.get.return_value, resp)
             Pzk.get.assert_called_once_with(self.zk._zk, '/foo/bar', None)
+
+    def test_get_watch(self):
+        """ Should Make a get request to libzookeeper """
+        with patch.object(client, 'zookeeper') as Pzk:
+            watch = Mock(name='Mock Watch')
+            resp = self.zk.get('/foo/bar', watch)
+            self.assertEqual(Pzk.get.return_value, resp)
+            Pzk.get.assert_called_once_with(self.zk._zk, '/foo/bar', watch)
+
 
     def test_get_children(self):
         """ Should Make a get_children request to libzookeeper """
@@ -78,6 +106,14 @@ class ClientTestCase(unittest.TestCase):
             resp = self.zk.exists('/foo/bar')
             self.assertEqual(Pzk.exists.return_value, resp)
             Pzk.exists.assert_called_once_with(self.zk._zk, '/foo/bar', None)
+
+    def test_exists_watch(self):
+        """ Should Make an exists request to libzookeeper """
+        cb = Mock(name='Mock Callback')
+        with patch.object(client, 'zookeeper') as Pzk:
+            resp = self.zk.exists('/foo/bar', watch=cb)
+            self.assertEqual(Pzk.exists.return_value, resp)
+            Pzk.exists.assert_called_once_with(self.zk._zk, '/foo/bar', cb)
 
     def test_ls(self):
         """ Replicate ls """

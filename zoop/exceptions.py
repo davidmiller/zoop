@@ -13,5 +13,8 @@ class LostConnectionError(Error):
 class NodeExistsError(Error):
     "The Node Exists!"
 
+class NoNodeError(Error):
+    "This Node does not exist"
+
 class Empty(Error):
     "The item in question is empty."
