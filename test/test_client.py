@@ -10,7 +10,7 @@ from mock import patch, Mock
 import zookeeper
 
 import zoop
-from zoop import client, exceptions, logutils
+from zoop import client, exceptions, logutils, queue
 
 logutils.set_loglevel('ERROR')
 
@@ -128,6 +128,17 @@ class ClientTestCase(unittest.TestCase):
         with patch.object(self.zk.watcher, 'spyon') as Pspy:
             self.zk.watch('/foo/bar', zoop.Event.Child, cb)
             Pspy.assert_called_once_with('/foo/bar', zoop.Event.Child, cb)
+
+    def test_queue_no_connection(self):
+        """ Should raise an error """
+        with self.assertRaises(exceptions.NotConnectedError):
+            self.zk.Queue('/myq')
+
+    def test_queue(self):
+        self.zk.connected = True
+        with patch.object(queue, 'Queue') as Pq:
+            q = self.zk.Queue('/myq')
+            Pq.assert_called_once_with(self.zk, '/myq')
 
 
 

@@ -10,6 +10,9 @@ class NoEventError(Error):
 class LostConnectionError(Error):
     "Lost connection to the ZooKeeper instance"
 
+class NotConnectedError(Error):
+    "Not Connected to a ZooKeeper instance."
+
 class NodeExistsError(Error):
     "The Node Exists!"
 

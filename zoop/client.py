@@ -34,6 +34,9 @@ class ZooKeeper(object):
 
     Arguments:
     - `connection`: string of host:port
+
+    Return: None
+    Exceptions: None
     """
 
     def __init__(self, connection):
@@ -180,10 +183,11 @@ class ZooKeeper(object):
         - `path`: string
         - `value`: string
 
-        Return: Tuple of (Value, Statsdict)
+        Return: None
         Exceptions: NoNodeError
         """
-        return zookeeper.set(self._zk, path, value)
+        zookeeper.set(self._zk, path, value)
+        return
 
     def watch(self, path, callback, event):
         """
@@ -201,6 +205,28 @@ class ZooKeeper(object):
         """
         self.watcher.spyon(path, callback, event)
         return
+
+    def Queue(self, path):
+        """
+        Returns an instantiated Queue with the root `path`
+        connected to this ZooKeeper instance.
+
+        Arguments:
+        - `path`: string - the root of your Queue. should be an
+                           absolute path.
+
+        Return: Queue
+        Exceptions: NotConnectedError - the ZooKeeper instance was not connected
+        """
+        if not self.connected:
+            err = "You aren't connected to a ZooKeeper instance - no way to create a Queue"
+            raise exceptions.NotConnectedError(err)
+        # Avoid circular imports from the top-level package namespace
+        from zoop import queue
+        return queue.Queue(self, path)
+
+
+
 
 class AsyncZooKeeper(object):
     """
