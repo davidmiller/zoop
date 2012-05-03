@@ -59,3 +59,20 @@ And when we're done::
     ['zookeeper']
 
 1. Deleting nodes uses the succinctly-named delete() method.
+
+Watching for changes
+====================
+
+One of the fundamental principles of ZooKeeper is the registering of
+callbacks when changes occur elsewhere in your system.
+
+With zoop we do this by registering a watch function::
+
+    >>> def watchit(path, event):
+    ...     print "Watching it!", path, zoop.Event.human(event)
+    ...
+    >>> zk.watch('/frist/hello/', watchit, zoop.Event.Changed)
+    >>> zk.set('/frist/hello', 'Oh what a beautiful morning!')
+    Watching it! /frist/hello, Changed
+
+You can watch for Change, Deleted, or Child events on a Node.

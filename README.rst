@@ -9,7 +9,7 @@ concentrate on whatever it was you were originally doing::
 
     >>> zk =  zoop.ZooKeeper('localhost:2181')
     >>> zk.connect()
-    >>> q = zoop.Queue(zk, '/howdy')
+    >>> q = zk.Queue('/howdy')
     >>> def gotit(data):
     ...     print "Gotit got data:", data
     >>> q.watch(gotit)
@@ -23,6 +23,12 @@ concentrate on whatever it was you were originally doing::
    :alt: Build Status
    :target: https://secure.travis-ci.org/davidmiller/zoop
 
-Usage
-=====
+Check out:
 
+`Documentation`_
+`Source`_
+`Issues`_
+
+.. _Documentation: http://www.deadpansincerity.com/docs/zoop/
+.. _Source: https://github.com/davidmiller/zoop
+.. _Issues: https://github.com/davidmiller/zoop/issues
