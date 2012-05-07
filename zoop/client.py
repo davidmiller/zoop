@@ -18,6 +18,7 @@
 """
 zoop.client
 """
+from os.path import join
 import threading
 
 import zookeeper
@@ -26,18 +27,11 @@ from zoop import exceptions, watch
 
 OPEN_ACL_UNSAFE = dict(perms=zookeeper.PERM_ALL, scheme = 'world', id='anyone')
 
-
-
-class ZooKeeper(object):
+class BaseZK(object):
     """
-    The ZooKeeper client
-
-    Arguments:
-    - `connection`: string of host:port
-
-    Return: None
-    Exceptions: None
+    Common ZooKeeper Client protocol for subclassing
     """
+    flavour = 'Base Client'
 
     def __init__(self, connection):
         """
@@ -55,7 +49,8 @@ class ZooKeeper(object):
         return
 
     def __repr__(self):
-        return "<ZooKeeper Client for {0}>".format(self.server)
+        return "<ZooKeeper {0} for {1}>".format(
+            self.flavour, self.server)
 
     def connect(self):
         """
@@ -79,6 +74,19 @@ class ZooKeeper(object):
         self.watcher.set_zhandle(self._zk)
         self.watcher.set_global()
 
+
+class ZooKeeper(BaseZK):
+    """
+    The ZooKeeper client
+
+    Arguments:
+    - `connection`: string of host:port
+
+    Return: None
+    Exceptions: None
+    """
+    flavour = 'Client'
+
     def close(self):
         """
         Close the connection to our ZooKeeper instance
@@ -100,13 +108,19 @@ class ZooKeeper(object):
         - `flags`: int - the ZooKeeper flags (SEQUENCE|EPHEMERAL)
 
         Return: None
-        Exceptions: NodeExistsError
+        Exceptions:
+        - NodeExistsError: This Node already exists
+        - NoNodeError: A parent Node in `path` does not exist
+
         """
         try:
             return zookeeper.create(self._zk, path, value, acl, flags)
         except zookeeper.NodeExistsException:
             errstr = "Can't create {0} as it already exists".format(path)
             raise exceptions.NodeExistsError(errstr)
+        except zookeeper.NoNodeException:
+            errstr = "A parent node of {0} does not exist".format(path)
+            raise exceptions.NoNodeError(errstr)
 
     def delete(self, path):
         """
@@ -123,6 +137,18 @@ class ZooKeeper(object):
         except zookeeper.NoNodeException:
             errmsg = "The Node {0} does not exist".format(path)
             raise exceptions.NoNodeError(errmsg)
+
+    def exists(self, path, watch=None):
+        """
+        Determine whether the ZooKeeper Node at `path` exists
+
+        Arguments:
+        - `path`: string
+
+        Return: dict of stats or None
+        Exceptions: None
+        """
+        return zookeeper.exists(self._zk, path, watch)
 
     def get(self, path, watch=None):
         """
@@ -163,17 +189,21 @@ class ZooKeeper(object):
         """
         return self.get_children(path)
 
-    def exists(self, path, watch=None):
+    def mkdirp(self, path):
         """
-        Determine whether the ZooKeeper Node at `path` exists
+        Recursively make all nodes in the given path
 
         Arguments:
         - `path`: string
 
-        Return: dict of stats or None
+        Return: None
         Exceptions: None
         """
-        return zookeeper.exists(self._zk, path, watch)
+        paths = path.split('/')
+        for i, path in enumerate(paths):
+            p = join(join(paths[:i]), path)
+            if not self.exists(p):
+                self.create(p)
 
     def set(self, path, value):
         """
@@ -236,3 +266,4 @@ class AsyncZooKeeper(object):
     Methods can be expected to take an additional
     callback parameter.
     """
+    flavour = 'Async Client'

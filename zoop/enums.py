@@ -14,8 +14,8 @@ class Event(object):
     Changed = zookeeper.CHANGED_EVENT
     Child   = zookeeper.CHILD_EVENT
 
-    @staticmethod
-    def human(item):
+    @classmethod
+    def human(cls, item):
         """
         Given an integer representing an item in this Enum,
         fetch us the name of that property.
@@ -27,6 +27,6 @@ class Event(object):
         Return: str
         Exceptions: None
         """
-        vals = Event.__dict__.values()
+        vals = cls.__dict__.values()
         thisone = [v for k, v in vals if v == item]
         return thisone[0]

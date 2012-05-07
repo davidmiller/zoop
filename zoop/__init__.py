@@ -8,6 +8,7 @@ from zoop.enums import Event
 from zoop.lock import Lock
 from zoop.logutils import divert_zoolog
 from zoop.queue import Queue
+from zoop.tree import Tree
 
 __all__ = [
     'exceptions',
@@ -16,5 +17,6 @@ __all__ = [
     'divert_zoolog',
     'Event',
     'Lock',
-    'Queue'
+    'Queue',
+    'Tree'
     ]

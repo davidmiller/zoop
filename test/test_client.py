@@ -14,9 +14,9 @@ from zoop import client, exceptions, logutils, queue
 
 logutils.set_loglevel('ERROR')
 
-class ClientTestCase(unittest.TestCase):
+class BaseZKTestCase(unittest.TestCase):
     def setUp(self):
-        self.zk = client.ZooKeeper('localhost:2181')
+        self.zk = client.BaseZK('localhost:2181')
 
     def test_init(self):
         """ store vars """
@@ -40,6 +40,11 @@ class ClientTestCase(unittest.TestCase):
                 Pinit.assert_called_once()
                 self.assertEqual(1, self.zk._zk)
                 self.assertEqual(True, self.zk.connected)
+
+
+class ClientTestCase(unittest.TestCase):
+    def setUp(self):
+        self.zk = client.ZooKeeper('localhost:2181')
 
     def test_create(self):
         """ Create a node """
