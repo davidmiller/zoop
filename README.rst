@@ -26,7 +26,9 @@ concentrate on whatever it was you were originally doing::
 Check out:
 
 `Documentation`_
+
 `Source`_
+
 `Issues`_
 
 .. _Documentation: http://www.deadpansincerity.com/docs/zoop/
