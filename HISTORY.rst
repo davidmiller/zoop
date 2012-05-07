@@ -2,7 +2,10 @@ History
 -------
 
 
-0.0.1 (2012-04-29)
+0.1 (2012-05-07)
 ++++++++++++++++++
 
-* FRIST!
+Initial release with
+* complete CRUD
+* Lock Implementation
+* Queue Implementation

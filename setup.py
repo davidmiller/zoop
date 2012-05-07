@@ -17,7 +17,7 @@ setup(
     author = "David Miller",
     author_email = "david@deadpansincerity.com",
     url = "http://github.com/davidmiller/zoop",
-    description = "Pythonic API for Zookeeper",
+    description = "Pythonic API and common paradigms for Zookeeper",
     long_description = open('README.rst').read() + "\n\n" +  open('HISTORY.rst').read(),
     classifiers = [
         "Programming Language :: Python",
