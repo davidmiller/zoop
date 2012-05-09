@@ -41,6 +41,17 @@ class BaseZKTestCase(unittest.TestCase):
                 self.assertEqual(1, self.zk._zk)
                 self.assertEqual(True, self.zk.connected)
 
+    def test_queue_no_connection(self):
+        """ Should raise an error """
+        with self.assertRaises(exceptions.NotConnectedError):
+            self.zk.Queue('/myq')
+
+    def test_queue(self):
+        self.zk.connected = True
+        with patch.object(queue, 'Queue') as Pq:
+            q = self.zk.Queue('/myq')
+            Pq.assert_called_once_with(self.zk, '/myq')
+
 
 class ClientTestCase(unittest.TestCase):
     def setUp(self):
@@ -127,6 +138,22 @@ class ClientTestCase(unittest.TestCase):
             Pzk.get_children.assert_called_once_with(self.zk._zk, '/goo/car', None)
             self.assertEqual(Pzk.get_children.return_value, resp)
 
+    def test_rmrf(self):
+        """ Remove recursive """
+        rvals = ['child2', 'child']
+        def rets(*a,**kw ):
+            if rvals:
+                return [rvals.pop()]
+            else:
+                return []
+
+        with patch.object(client, 'zookeeper') as pzk:
+            pzk.get_children.side_effect = rets
+            self.zk.rm_rf('/foo/bar/baz')
+            pzk.delete.assert_any_call(self.zk._zk, '/foo/bar/baz/child/child2')
+            pzk.delete.assert_any_call(self.zk._zk, '/foo/bar/baz/child')
+            pzk.delete.assert_any_call(self.zk._zk, '/foo/bar/baz')
+
     def test_watch(self):
         """ Register our desire to watch for events """
         cb = lambda *a,**k: True
@@ -144,6 +171,14 @@ class ClientTestCase(unittest.TestCase):
         with patch.object(queue, 'Queue') as Pq:
             q = self.zk.Queue('/myq')
             Pq.assert_called_once_with(self.zk, '/myq')
+
+class AsyncClientTestCase(unittest.TestCase):
+    def setUp(self):
+        self.zk = client.AsyncZooKeeper('localhost:2181')
+
+    def test_create(self):
+        """ Create a node """
+        pass
 
 
 

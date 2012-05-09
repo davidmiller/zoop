@@ -74,6 +74,171 @@ class BaseZK(object):
         self.watcher.set_zhandle(self._zk)
         self.watcher.set_global()
 
+    def close(self):
+        """
+        Close the connection to our ZooKeeper instance
+
+        Return: None
+        Exceptions: None
+        """
+        if self._zk:
+            zookeeper.close(self._zk)
+
+    """
+    Here we start stub methods that define the client API that remains
+    constant throughout subclasses.
+    """
+
+    def create(self, *a, **kw):
+        """
+        This is a method stub for subclasses to override.
+
+        Return: None
+        Exceptions: NotImplementedError
+        """
+        raise NotImplementedError("!")
+
+    def delete(self, *a, **kw):
+        """
+        This is a method stub for subclasses to override.
+
+        Return: None
+        Exceptions: NotImplementedError
+        """
+        raise NotImplementedError("!")
+
+    def exists(self, *a, **kw):
+        """
+        This is a method stub for subclasses to override.
+
+        Return: None
+        Exceptions: NotImplementedError
+        """
+        raise NotImplementedError("!")
+
+    def get(self, *a, **kw):
+        """
+        This is a method stub for subclasses to override.
+
+        Return: None
+        Exceptions: NotImplementedError
+        """
+        raise NotImplementedError("!")
+
+    def get_children(self, *a, **kw):
+        """
+        This is a method stub for subclasses to override.
+
+        Return: None
+        Exceptions: NotImplementedError
+        """
+        raise NotImplementedError("!")
+
+    def set(self, *a, **kw):
+        """
+        This is a method stub for subclasses to override.
+
+        Return: None
+        Exceptions: NotImplementedError
+        """
+        raise NotImplementedError("!")
+
+    def watch(self, *a, **kw):
+        """
+        This is a method stub for subclasses to override.
+
+        Return: None
+        Exceptions: NotImplementedError
+        """
+        raise NotImplementedError("!")
+
+    """
+    The following are either aliases, or generic abstractions that
+    rely on the implementation of the APIs above.
+    """
+
+    def ls(self, path):
+        """
+        Return a list of strings representing the child nodes of `path`
+
+        (Note, this is an alias of get_children)
+        Arguments:
+        - `path`: string
+
+        Return: list of strings
+        Exceptions: NoNodeError
+        """
+        return self.get_children(path)
+
+    def rm(self, path):
+        """
+        Delete the node at `path`
+
+        (Note, this is an alias of delete)
+        Arguments:
+        - `path`: string
+
+        Return: None
+        Exceptions: None
+        """
+        return self.delete(path)
+
+    def mkdirp(self, path):
+        """
+        Recursively make all nodes in the given path
+
+        Arguments:
+        - `path`: string
+
+        Return: None
+        Exceptions: None
+        """
+        paths = path.split('/')
+        for i, path in enumerate(paths):
+            p = join(join(paths[:i]), path)
+            if not self.exists(p):
+                self.create(p)
+
+    def rm_rf(self, path):
+        """
+        Recursively delete all nodes below the given path
+
+        Arguments:
+        - `path`: string
+
+        Return: None
+        Exceptions: None
+        """
+        kids = self.ls(path)
+        if kids:
+            for k in kids:
+                self.rm_rf(join(path, k))
+        return self.rm(path)
+
+    """
+    Factory methods to return objects that require an instance of the
+    client, ambivalent to what flavour of client they are actually dealing with.
+    """
+
+    def Queue(self, path):
+        """
+        Returns an instantiated Queue with the root `path`
+        connected to this ZooKeeper instance.
+
+        Arguments:
+        - `path`: string - the root of your Queue. should be an
+                           absolute path.
+
+        Return: Queue
+        Exceptions: NotConnectedError - the ZooKeeper instance was not connected
+        """
+        if not self.connected:
+            err = "You aren't connected to a ZooKeeper instance - no way to create a Queue"
+            raise exceptions.NotConnectedError(err)
+        # Avoid circular imports from the top-level package namespace
+        from zoop import queue
+        return queue.Queue(self, path)
+
 
 class ZooKeeper(BaseZK):
     """
@@ -86,16 +251,6 @@ class ZooKeeper(BaseZK):
     Exceptions: None
     """
     flavour = 'Client'
-
-    def close(self):
-        """
-        Close the connection to our ZooKeeper instance
-
-        Return: None
-        Exceptions: None
-        """
-        if self._zk:
-            zookeeper.close(self._zk)
 
     def create(self, path, value='', acl=[OPEN_ACL_UNSAFE], flags=0):
         """
@@ -176,35 +331,6 @@ class ZooKeeper(BaseZK):
         # !!! Wrap the ZooKeeper exceptions
         return zookeeper.get_children(self._zk, path, None)
 
-    def ls(self, path):
-        """
-        Return a list of strings representing the child nodes of `path`
-
-        (Note, this is an alias of get_children)
-        Arguments:
-        - `path`: string
-
-        Return: list of strings
-        Exceptions: NoNodeError
-        """
-        return self.get_children(path)
-
-    def mkdirp(self, path):
-        """
-        Recursively make all nodes in the given path
-
-        Arguments:
-        - `path`: string
-
-        Return: None
-        Exceptions: None
-        """
-        paths = path.split('/')
-        for i, path in enumerate(paths):
-            p = join(join(paths[:i]), path)
-            if not self.exists(p):
-                self.create(p)
-
     def set(self, path, value):
         """
         Set the value of the ZooKeeper Node at `path`
@@ -236,29 +362,8 @@ class ZooKeeper(BaseZK):
         self.watcher.spyon(path, callback, event)
         return
 
-    def Queue(self, path):
-        """
-        Returns an instantiated Queue with the root `path`
-        connected to this ZooKeeper instance.
 
-        Arguments:
-        - `path`: string - the root of your Queue. should be an
-                           absolute path.
-
-        Return: Queue
-        Exceptions: NotConnectedError - the ZooKeeper instance was not connected
-        """
-        if not self.connected:
-            err = "You aren't connected to a ZooKeeper instance - no way to create a Queue"
-            raise exceptions.NotConnectedError(err)
-        # Avoid circular imports from the top-level package namespace
-        from zoop import queue
-        return queue.Queue(self, path)
-
-
-
-
-class AsyncZooKeeper(object):
+class AsyncZooKeeper(BaseZK):
     """
     A ZooKeeper client that uses the Asynchronous
     libzookeeper API.
@@ -267,3 +372,67 @@ class AsyncZooKeeper(object):
     callback parameter.
     """
     flavour = 'Async Client'
+
+    def create(self, *a, **kw):
+        """
+        This is a method stub for subclasses to override.
+
+        Return: None
+        Exceptions: NotImplementedError
+        """
+        raise NotImplementedError("!")
+
+    def delete(self, *a, **kw):
+        """
+        This is a method stub for subclasses to override.
+
+        Return: None
+        Exceptions: NotImplementedError
+        """
+        raise NotImplementedError("!")
+
+    def exists(self, *a, **kw):
+        """
+        This is a method stub for subclasses to override.
+
+        Return: None
+        Exceptions: NotImplementedError
+        """
+        raise NotImplementedError("!")
+
+    def get(self, *a, **kw):
+        """
+        This is a method stub for subclasses to override.
+
+        Return: None
+        Exceptions: NotImplementedError
+        """
+        raise NotImplementedError("!")
+
+    def get_children(self, *a, **kw):
+        """
+        This is a method stub for subclasses to override.
+
+        Return: None
+        Exceptions: NotImplementedError
+        """
+
+        raise NotImplementedError("!")
+
+    def set(self, *a, **kw):
+        """
+        This is a method stub for subclasses to override.
+
+        Return: None
+        Exceptions: NotImplementedError
+        """
+        raise NotImplementedError("!")
+
+    def watch(self, *a, **kw):
+        """
+        This is a method stub for subclasses to override.
+
+        Return: None
+        Exceptions: NotImplementedError
+        """
+        raise NotImplementedError("!")
