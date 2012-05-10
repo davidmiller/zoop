@@ -11,10 +11,23 @@ from mock import patch
 from zoop import tree
 
 SIMPLE_TREE = """/
-|-- foo
-    |-- bar
-    |-- car
-|-- goo"""
+ |-- foo
+ |   |-- bar
+ |   |-- car
+ |-- goo"""
+
+NESTED_TREE = """/
+ |-- foo
+ |   |-- bar
+ |   |   |-- hoo
+ |   |   |   |-- dar
+ |   |   |   |-- far
+ |   |   |   |-- gar
+ |   |   |   |-- har
+ |   |   |-- joo
+ |   |   |-- koo
+ |   |-- car
+ |-- goo"""
 
 class TreeTestCase(unittest.TestCase):
     def setUp(self):
@@ -42,6 +55,26 @@ class TreeTestCase(unittest.TestCase):
             'goo': None
             }
         self.assertEqual(SIMPLE_TREE, self.t.tree())
+
+    def test_nested_tree(self):
+        "Printed representation of a nested tree"
+        self.t.nodes = {
+            'foo': {
+                'bar': {
+                    'hoo': {
+                        'dar': None,
+                        'far': None,
+                        'gar': None,
+                        'har': None
+                        },
+                    'joo': None,
+                    'koo': None
+                    },
+                'car': None
+                },
+            'goo': None
+            }
+        self.assertEqual(NESTED_TREE, self.t.tree())
 
     def test_pprint(self):
         "Test our Printing"

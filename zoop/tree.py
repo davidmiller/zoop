@@ -21,7 +21,7 @@ zoop.tree
 Representing ZooKeeper Node trees.
 
 >>> t = Tree()
->>> t.mkdirp('/foo/bar/goo/car')
+>>> t.add_nodes('/foo/bar/goo/car')
 """
 class Tree(object):
     def __init__(self):
@@ -31,6 +31,7 @@ class Tree(object):
         return "<zoop Tree>"
 
     def add_nodes(self, path, nodes):
+        # This is very possibly not the API you are looking for
         pathlist = [p for p in path.split('/') if p]
         print pathlist
         current = self.nodes
@@ -51,13 +52,18 @@ class Tree(object):
         """
         lines = ['/']
 
-        def rectree(nodes, indent):
-            for child in sorted(nodes.keys()):
-                lines.append('{0}|-- {1}'.format(' ' * indent, child))
+        def rectree(nodes, prefix):
+            nodenames = sorted(nodes.keys())
+            for i, child in enumerate(nodenames):
+                lines.append('{0}|-- {1}'.format(prefix, child))
                 if nodes[child]:
-                    rectree(nodes[child], indent + 4)
+                    nodefix = ' ' * 4
+                    if i + 1 < len(nodenames):
+                        nodefix = '|{0}'.format(nodefix[1:])
+                    subfix = '{0}{1}'.format(prefix, nodefix)
+                    rectree(nodes[child], subfix)
 
-        rectree(self.nodes, 0)
+        rectree(self.nodes, ' ')
         return "\n".join(lines)
 
     def pprint(self):
