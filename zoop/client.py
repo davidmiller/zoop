@@ -220,7 +220,7 @@ class BaseZK(object):
     client, ambivalent to what flavour of client they are actually dealing with.
     """
 
-    def Queue(self, path):
+    def Queue(self, path, prefix='q-'):
         """
         Returns an instantiated Queue with the root `path`
         connected to this ZooKeeper instance.
@@ -228,6 +228,7 @@ class BaseZK(object):
         Arguments:
         - `path`: string - the root of your Queue. should be an
                            absolute path.
+        - `prefix`: prefix string for the item nodes.
 
         Return: Queue
         Exceptions: NotConnectedError - the ZooKeeper instance was not connected
@@ -237,7 +238,7 @@ class BaseZK(object):
             raise exceptions.NotConnectedError(err)
         # Avoid circular imports from the top-level package namespace
         from zoop import queue
-        return queue.Queue(self, path)
+        return queue.Queue(self, path, prefix=prefix)
 
 
 class ZooKeeper(BaseZK):

@@ -28,15 +28,19 @@ import os
 
 import zookeeper
 
-from zoop import enums, exceptions
+from zoop import enums, exceptions, lock
 
 class Queue(object):
     """
-    A FIFO queue for ZooKeeper
+    A FIFO queue for ZooKeeper.
+
+    Specifying the prefix allows you interoperability with
+    Queue implementations from other libraries.
 
     Arguments:
     - `client`: ZooKeeper
     - `path`: string Path we want to treat as a queue
+    - `prefix`: prefix string for the item nodes.
 
     >>> zk = ZooKeeper('localhost:2181')
     >>> myq = Queue(zk, '/myq')
@@ -51,12 +55,14 @@ class Queue(object):
         ...
     Empty: No items in queue at /myq
     """
-    def __init__(self, client, path):
+    def __init__(self, client, path, prefix='q-'):
         self.zk = client
         self.path = path
-        self.prefix = 'q-'
+        self.prefix = prefix
         if not self.zk.exists(path):
             self.zk.create(path)
+        name = os.path.basename(path) + '-lock'
+        self.lock = lock.Lock(client, name, os.path.dirname(path))
 
     def __repr__(self):
         return "<ZooKeeper FIFO Queue at {0}{1}>".format(self.zk.server, self.path)
@@ -139,8 +145,47 @@ class Queue(object):
 
     def watch(self, callback):
         """
+        Watch the Queue for items being added, and when they are,
+        call `callback` with a list of items currently in the Queue.
+
+        `callback` should be a callable that takes a single argument.
+        It should expect a list of strings.
+
+        Arguments:
+        - `callback`: callable
+
+        Return: None
+        Exceptions: None
+
+        >>> zk = ZooKeeper('localhost:2181')
+        >>> zk.connect()
+        >>> myq = Queue(zk, '/myq')
+        >>> def watchit(data):
+        ...     print "Watchit got", data, "!"
+        >>> assert(callable(watchit))
+        >>> myq.watch(watchit)
+        >>> myq.put("Frist")
+        Watchit got ['q-00000001'] !
+        """
+        def watcher(event, path):
+            """
+            Watch for items added to the Queue, then remove the latest and
+            run the callback on it.
+            """
+            try:
+                kids = self.sorted()
+            except exceptions.Empty:
+                return # Deleted event
+            return callback(kids)
+
+        self.zk.watch(self.path, watcher, enums.Event.Child)
+        return
+
+    def watchitem(self, callback):
+        """
         Watch for items being added to the queue, and call
-        callback when they are added.
+        callback with the contents of added nodes when they
+        are added.
 
         Callback should be callable and should take one
         argument, the data for the item that has just been
@@ -158,7 +203,7 @@ class Queue(object):
         >>> def watchit(data):
         ...     print "Watchit got", data, "!"
         >>> assert(callable(watchit))
-        >>> myq.watch(watchit)
+        >>> myq.watchitem(watchit)
         >>> myq.put("Frist")
         Watchit got "Frist" !
         """
@@ -174,6 +219,8 @@ class Queue(object):
             return callback(data)
 
         self.zk.watch(self.path, watcher, enums.Event.Child)
+
+
 
 """
 !!! PriorityQueue

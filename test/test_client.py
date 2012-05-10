@@ -50,7 +50,7 @@ class BaseZKTestCase(unittest.TestCase):
         self.zk.connected = True
         with patch.object(queue, 'Queue') as Pq:
             q = self.zk.Queue('/myq')
-            Pq.assert_called_once_with(self.zk, '/myq')
+            Pq.assert_called_once_with(self.zk, '/myq', prefix='q-')
 
 
 class ClientTestCase(unittest.TestCase):
@@ -170,7 +170,7 @@ class ClientTestCase(unittest.TestCase):
         self.zk.connected = True
         with patch.object(queue, 'Queue') as Pq:
             q = self.zk.Queue('/myq')
-            Pq.assert_called_once_with(self.zk, '/myq')
+            Pq.assert_called_once_with(self.zk, '/myq', prefix='q-')
 
 class AsyncClientTestCase(unittest.TestCase):
     def setUp(self):

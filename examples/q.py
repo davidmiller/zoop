@@ -14,7 +14,7 @@ def gotit(data):
 
 q.flush()
 
-q.watch(gotit)
+q.watchitem(gotit)
 
 q.put("frist!")
 time.sleep(1)

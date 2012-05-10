@@ -22,15 +22,15 @@ class QueueTestCase(unittest.TestCase):
         zk = Mock(name='Mock ZooKeeper')
         zk.exists.return_value = True
         queue.Queue(zk, '/bar/q')
-        zk.exists.assert_called_once_with('/bar/q')
+        zk.exists.assert_any_call('/bar/q')
 
     def test_init_doesnt_exist(self):
         "Don't create, it exists"
         zk = Mock(name='Mock ZooKeeper')
         zk.exists.return_value = False
         queue.Queue(zk, '/bar/q')
-        zk.exists.assert_called_once_with('/bar/q')
-        zk.create.assert_called_once_with('/bar/q')
+        zk.exists.assert_any_call('/bar/q')
+        zk.create.assert_any_call('/bar/q')
 
     def test_empty(self):
         """ The queue is empty """
@@ -91,7 +91,12 @@ class QueueTestCase(unittest.TestCase):
     def test_watch(self):
         cb = Mock(name='Mock Callback')
         self.q.watch(cb)
-        self.zk.watch.assert_called_once()
+        self.assertEqual(True, self.zk.watch.called)
+
+    def test_watchitem(self):
+        cb = Mock(name='Mock Callback')
+        self.q.watchitem(cb)
+        self.assertEqual(True, self.zk.watch.called)
 
     def tearDown(self):
         pass
