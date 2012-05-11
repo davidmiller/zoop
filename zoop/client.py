@@ -40,7 +40,7 @@ class BaseZK(object):
         Arguments:
         - `connection`: string host:port
         """
-        self.connwait = 10.0
+        self.connwait = 15.0
         self.connected = False
         self.cv = threading.Condition()
         self.server = connection

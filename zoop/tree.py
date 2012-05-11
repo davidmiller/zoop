@@ -30,6 +30,31 @@ class Tree(object):
     def __repr__(self):
         return "<zoop Tree>"
 
+    @staticmethod
+    def from_zk(zk, root='/', level=None, pattern=None, exclude=None):
+        """
+        Inspect the ZooKeeper instance connected in `zk, and create a
+        tree representing the schema starting at `root`, and descending
+        `level` subdirectories.
+
+        If the `pattern` argument is passed, only include those Nodes whose
+        name matches the regexp `pattern`.
+
+        If the `exclude` argument is passed, exclude any Nodes whose name
+        matches the regexp `exclude`
+
+        Arguments:
+        - `zk`: ZooKeeper
+        - `root`: str - the node to start at.
+        - `level`: int - the number of child Nodes to descend.
+        - `pattern`: str - regexp
+        - `exclude`: str - regexp
+
+        Return: Tree
+        Exceptions: None
+        """
+        return Tree()
+
     def add_nodes(self, path, nodes):
         # This is very possibly not the API you are looking for
         pathlist = [p for p in path.split('/') if p]
