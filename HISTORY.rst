@@ -1,8 +1,8 @@
 History
 -------
 
-0.2
-+++
+0.1.1
++++++
 
 Expanding the Filesystem metaphor:
 Client now has rm_rf() and rm() methods
